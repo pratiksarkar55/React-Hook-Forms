@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import {useForm,useFieldArray} from 'react-hook-form'
+import {useForm,useFieldArray, FieldErrors} from 'react-hook-form'
 import {DevTool} from "@hookform/devtools"
 
 let renderCount = 0; // in strict mode react renders the component twice during developmemnt.READ THE ARTICLE.
@@ -47,7 +47,7 @@ export default function YouTubeForm() {
     //     }
     // }
   });
-  const {register,control,handleSubmit,formState,watch,setValue,getValues} = form;
+  const {register,control,handleSubmit,formState,watch,setValue,getValues,reset} = form;
 
   useEffect(()=>{
  const watchSubscribe = watch((value)=>{
@@ -58,8 +58,13 @@ export default function YouTubeForm() {
   })
   },[watch])
  // const {name,onBlur,onChange,ref} = register("username");
- const {errors,touchedFields,dirtyFields,isDirty,isValid} = formState;
+ const {errors,touchedFields,dirtyFields,isDirty,isValid,isSubmitting,isSubmitted,isSubmitSuccessful,submitCount} = formState;
  console.log(touchedFields,dirtyFields,isDirty,isValid);
+
+ console.log(isSubmitting); // true while submitting false afterwards
+ console.log(isSubmitted); // true after submission and reamins true unless refrshed.
+ console.log(isSubmitSuccessful);// true if all validations passes after submission
+ console.log(submitCount); // numer of submissions
  renderCount++;
 
  const {fields,append,remove} = useFieldArray({
@@ -85,15 +90,21 @@ export default function YouTubeForm() {
 
  //const watchList = watch(["username","email"]);
 
+
+ const onError = (err:FieldErrors<FormValues>)=>{
+  console.log("errors are",err);
+ }
+
   return (
     <div>
       {/* Rendercount is rendered only once(2 times while in developmemnt).So there's no re-render on formstate update */}
       COunt is {renderCount/2} 
     {/* //   <div>WatchList : {watchList}</div> */}
-       <form onSubmit={handleSubmit(onSubmit)} noValidate>
+       <form onSubmit={handleSubmit(onSubmit,onError)} noValidate>
         <label htmlFor='username'>UserName</label>
         <input type='text' id='username' {...register("username",{
           required:"Username is required",
+          // disabled:true
         })} />
         <p>{errors.username?.message}</p>
         <label htmlFor='email'>Email</label>
@@ -178,7 +189,8 @@ export default function YouTubeForm() {
         <p>{errors.dob?.message}</p>
         <button type='button' onClick={()=>{handleSetValue()}}>SetValue</button>
         <button type='button' onClick={()=>{handleGetValue()}}>GetValues</button>
-        <button>Submit</button>
+        <button disabled={!isDirty || !isValid}>Submit</button>
+        <button onClick={()=>{reset()}}>Reset</button>
         </form>
         <DevTool  control={control}/>
     </div>
