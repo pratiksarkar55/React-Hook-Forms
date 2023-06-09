@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { isValidElement, useEffect, useState } from 'react'
 import {useForm,useFieldArray, FieldErrors} from 'react-hook-form'
 import {DevTool} from "@hookform/devtools"
 
@@ -19,7 +19,7 @@ type FormValues = {
   age:number;
   dob:Date;
 }
-
+// REACT HOOK FORM 7.44.2
 export default function YouTubeForm() {
 
   const form =  useForm<FormValues>({
@@ -35,7 +35,8 @@ export default function YouTubeForm() {
       phNumbers:[{number:''}],
       age:0,
       dob:new Date()
-    }
+    },
+    mode:"onSubmit" // default mode is onSubmit
 
     // defaultValues : async ()=>{
     //     const response = await fetch("https://jsonplaceholder.typicode.com/users/1");
@@ -46,36 +47,48 @@ export default function YouTubeForm() {
     //      channel:""
     //     }
     // }
-  });
-  const {register,control,handleSubmit,formState,watch,setValue,getValues,reset} = form;
-
-  useEffect(()=>{
- const watchSubscribe = watch((value)=>{
-   //console.log(value);
-  return ()=>{
-    watchSubscribe.unsubscribe();
   }
-  })
-  },[watch])
- // const {name,onBlur,onChange,ref} = register("username");
- const {errors,touchedFields,dirtyFields,isDirty,isValid,isSubmitting,isSubmitted,isSubmitSuccessful,submitCount} = formState;
- console.log(touchedFields,dirtyFields,isDirty,isValid);
+  );
+  // const {register,control,handleSubmit,formState,watch,setValue,getValues,reset} = form;
+    const {register,control,handleSubmit,formState,setValue,getValues,reset,watch,trigger} = form;
+    const [email,setEmail] = useState<string>('')
 
- console.log(isSubmitting); // true while submitting false afterwards
- console.log(isSubmitted); // true after submission and reamins true unless refrshed.
- console.log(isSubmitSuccessful);// true if all validations passes after submission
- console.log(submitCount); // numer of submissions
+//   useEffect(()=>{
+//  const watchSubscribe = watch((value)=>{
+//      console.log(value);
+//   return ()=>{
+//     watchSubscribe.unsubscribe();
+//   }
+//   })
+//   },[watch])
+ // const {name,onBlur,onChange,ref} = register("username");
+
+ 
+//  const {errors,touchedFields,dirtyFields,isDirty,isValid,isSubmitting,isSubmitted,isSubmitSuccessful,submitCount} = formState;   
+// const {isDirty,isValid} = formState;// RE-RENDERS EVEN WHEN formState IS DESTRUCTED and isDirty and isValid IS NOT USED.isDirty,isVaild RE-RENDERS THE APP BASED ON isDirty IS CHANGED or isValid IS CHANGED.
+//const {touchedFields,dirtyFields} = formState;   // SAME CAUSE OF RE-RENDERS
+  //const {errors,isSubmitting} = formState;    // SAME CAUSE OF RE-RENDERS
+  const {errors} = formState; 
+
+//  console.log('isDirty',isDirty);
+//  console.log('isValid',isValid);
+//  console.log('isSubmitting',isSubmitting); // true while submitting false afterwards
+//  console.log('isSubmitted',isSubmitted); // true after submission and reamins true unless refrshed/reset.
+//  console.log('isSubmitSuccessful',isSubmitSuccessful);// true if all validations passes after submission
+//  console.log('submitCount',submitCount); // numer of submissions
  renderCount++;
 
+ //REMOVE AND APPEND RE-REDNDERS THE COMPONENT
  const {fields,append,remove} = useFieldArray({
   name:"phNumbers",
   control
  })
 
  const onSubmit = (data:FormValues)=>{
-  //console.log("Form submitted",data);
+  console.log("Form submitted",data);
  }
 
+ // setValue RE-RENDERS THE COMPONENT
  const handleSetValue=()=>{
    setValue("username","Roni",{
     shouldDirty: true,
@@ -85,7 +98,7 @@ export default function YouTubeForm() {
  }
 
   const handleGetValue=()=>{
-   //console.log(getValues(["username", "email"]));
+   console.log(getValues(["username", "email"]));
  }
 
  //const watchList = watch(["username","email"]);
@@ -115,17 +128,25 @@ export default function YouTubeForm() {
             message:"Invalid email format"
           },
           validate:{
+            // THESE FUNCTIONAL VALIDATIONS HAPPENS WHILE TYPING FOR OTHER FIELDS AS WELL.HOW TO STOP IT???
             notAdmin:(fieldValue)=>{
+              console.log("MAKING CALL",fieldValue);
                return fieldValue!=="admin@gmail.com" || "Enter a different email address"
             },
-            blackListedEmail:(fieldValue)=>{
-               return fieldValue.endsWith(".com") || "Email should end with .com"
-            },
+            // blackListedEmail:(fieldValue)=>{
+            //    return fieldValue.endsWith(".com") || "Email should end with .com"
+            // },
+            exisitngEmail:async (fieldValue)=>{
+             const response = await fetch(`https://jsonplaceholder.typicode.com/users?email=${fieldValue}`);
+             const data = await response.json();
+              setEmail(fieldValue);
+              return data.length===0||"Email exists";
+            }
 
           }
         })} />
         <p>{errors.email?.message}</p>
-        <label htmlFor='channel'>Channel</label>
+         <label htmlFor='channel'>Channel</label>
         <input type='text' id='channel' {...register("channel",{
           required:"Channel is required"
         })} />
@@ -153,7 +174,7 @@ export default function YouTubeForm() {
         })} />
 
           <p>{errors.phone?errors.phone[1]?.message:""}</p>
-        <div>
+        {/* <div>
           <label>List of Phone Numbers</label>
           <div>
             {
@@ -172,27 +193,33 @@ export default function YouTubeForm() {
             }
           <button type='button' onClick={()=>{append({number:""})}}>Add phone number</button>
           </div>
-        </div>
+        </div> */}
         
         <label htmlFor='age'>Age</label>
         <input type='number' id='age' {...register("age",{
-          valueAsNumber:true,
+          valueAsNumber:true, // validate as number regardless of default type.
           required:"age is required"
         })} />
         <p>{errors.age?.message}</p>
 
          <label htmlFor='dob'>DOB</label>
         <input type='date' id='dob' {...register("dob",{
-          valueAsDate:true,
+          valueAsDate:true, // alidate as date regardless of default type.
           required:"DOB is required"
         })} />
-        <p>{errors.dob?.message}</p>
-        <button type='button' onClick={()=>{handleSetValue()}}>SetValue</button>
-        <button type='button' onClick={()=>{handleGetValue()}}>GetValues</button>
-        <button disabled={!isDirty || !isValid}>Submit</button>
-        <button onClick={()=>{reset()}}>Reset</button>
+       <p>{errors.dob?.message}</p>
+        {/* <button type='button' onClick={()=>{handleSetValue()}}>SetValue</button>
+        <button type='button' onClick={()=>{handleGetValue()}}>GetValues</button> */}
+        {/* <button disabled={!isDirty || !isValid}>Submit</button>
+        <button onClick={()=>{reset()}}>Reset</button> */}
+        <button type={"submit"}>Submit</button>
+        {/* DON'T CALL RESET INSIDE FORM SUBMIT HANDLER */}
+        <button type={"reset"} onClick={()=>{reset()}}>Reset</button>
+        <button type={"button"} onClick={()=>{trigger("email")}}>Triigger</button>
         </form>
         <DevTool  control={control}/>
     </div>
   )
 }
+
+// WHY ON SUBMIT FORM RENDERS TWICE??? One is for Validation and one is for submit.
